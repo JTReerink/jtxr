@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Romance Classifier</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #fafaf9;
+    color: #1a1a18;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 3rem 1rem 5rem;
+  }
+  .app { max-width: 480px; width: 100%; }
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 0.5px solid #ccc;
+    color: #999;
+    margin-bottom: 1rem;
+  }
+  h1 { font-size: 22px; font-weight: 500; margin-bottom: 6px; }
+  .subtitle { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 2.5rem; }
+  .input-row { display: flex; gap: 8px; margin-bottom: 2rem; }
+  .input-row input {
+    flex: 1;
+    font-size: 15px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 0.5px solid #ccc;
+    background: #fff;
+    color: #1a1a18;
+    outline: none;
+  }
+  .input-row input:focus { border-color: #999; }
+  .input-row button {
+    padding: 0 18px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 0.5px solid #ccc;
+    background: transparent;
+    color: #1a1a18;
+    white-space: nowrap;
+  }
+  .input-row button:hover { background: #f1efe8; }
+  .result-card {
+    background: #fff;
+    border: 0.5px solid #ddd;
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    margin-bottom: 1rem;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .result-card.idle { border-style: dashed; }
+  .idle-hint { font-size: 13px; color: #bbb; }
+  .analyzing { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .progress-track { width: 200px; height: 3px; background: #eee; border-radius: 2px; overflow: hidden; }
+  .progress-bar { height: 100%; width: 0%; background: #999; border-radius: 2px; transition: width 0.08s linear; }
+  .analyzing-label { font-size: 12px; color: #aaa; letter-spacing: 0.04em; }
+  .verdict-label { font-size: 11px; letter-spacing: 0.1em; color: #aaa; margin-bottom: 8px; }
+  .verdict-word { font-size: 28px; font-weight: 500; color: #1a1a18; margin-bottom: 16px; line-height: 1.2; }
+  .verdict-classification { font-size: 13px; color: #666; margin-bottom: 12px; }
+  .verdict-classification span { font-weight: 500; color: #1a1a18; }
+  .verdict-footnote {
+    font-size: 12px;
+    color: #aaa;
+    border-top: 0.5px solid #eee;
+    padding-top: 10px;
+    width: 100%;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .history { margin-top: 1.5rem; }
+  .history-label { font-size: 11px; letter-spacing: 0.08em; color: #aaa; margin-bottom: 10px; }
+  .history-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .history-pill {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: #f1efe8;
+    color: #666;
+    border: 0.5px solid #ddd;
+    cursor: pointer;
+  }
+  .history-pill:hover { border-color: #aaa; }
+  .disclaimer {
+    font-size: 11px;
+    color: #aaa;
+    text-align: center;
+    margin-top: 2rem;
+    line-height: 1.6;
+    border-top: 0.5px solid #eee;
+    padding-top: 1rem;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="badge">ROMANCE CLASSIFIER v1.0</div>
+  <h1>Is it romance?</h1>
+  <p class="subtitle">Describe your relationship. Our algorithm will analyze it and tell you exactly what you have.</p>
+
+  <div class="input-row">
+    <input type="text" id="user-input" placeholder="e.g. we talk for hours..." onkeydown="if(event.key==='Enter') analyze()" />
+    <button onclick="analyze()">Analyze</button>
+  </div>
+
+  <div class="result-card idle" id="result-card">
+    <p class="idle-hint">Awaiting input</p>
+  </div>
+
+  <div class="history" id="history" style="display:none;">
+    <p class="history-label">PREVIOUS ANALYSES</p>
+    <div class="history-list" id="history-list"></div>
+  </div>
+
+  <p class="disclaimer">* This classifier was trained on real human responses to the question "what is romance?"<br>Results may be inconclusive. This is intentional.</p>
+</div>
+
+<script>
+const words = [
+  'safety','comfort','home','support','kindness',
+  'counting on each other','small gestures','effort','growth',
+  'attention','complement each other','ordinary becomes special',
+  'feel wanted','warm feeling inside, constantly',
+  'chemistry','magnetic pull','mystery','kisses','love',
+  "into each other's strength",'gesture of deep affection'
+];
+
+const classifications = ['romance','friendship','romance','friendship','unclear'];
+const analysisSteps = [
+  'scanning for romantic indicators',
+  'cross-referencing with friendship data',
+  'measuring ambiguity levels',
+  'consulting the dataset',
+  'finalizing classification'
+];
+
+const historyItems = [];
+
+function analyze() {
+  const input = document.getElementById('user-input').value.trim();
+  if (!input) return;
+
+  const card = document.getElementById('result-card');
+  card.classList.remove('idle');
+  card.innerHTML = `<div class="analyzing">
+    <div class="progress-track"><div class="progress-bar" id="pbar"></div></div>
+    <p class="analyzing-label" id="step-label">${analysisSteps[0]}</p>
+  </div>`;
+
+  let pct = 0;
+  let step = 0;
+  const pbar = document.getElementById('pbar');
+
+  const interval = setInterval(() => {
+    pct += Math.random() * 4 + 1;
+    if (pbar) pbar.style.width = Math.min(pct, 95) + '%';
+    step = Math.floor(pct / 20);
+    const stepEl = document.getElementById('step-label');
+    if (stepEl && analysisSteps[step]) stepEl.textContent = analysisSteps[step];
+    if (pct >= 95) clearInterval(interval);
+  }, 80);
+
+  setTimeout(() => {
+    clearInterval(interval);
+    showResult(input);
+  }, 2800);
+}
+
+function showResult(input) {
+  const word = words[Math.floor(Math.random() * words.length)];
+  const classification = classifications[Math.floor(Math.random() * classifications.length)];
+  const card = document.getElementById('result-card');
+
+  const classText = classification === 'unclear'
+    ? '<span>unclear</span>'
+    : `<span>${classification}</span>`;
+
+  card.innerHTML = `
+    <p class="verdict-label">DIAGNOSIS</p>
+    <p class="verdict-word">${word}</p>
+    <p class="verdict-classification">classification: ${classText}</p>
+    <p class="verdict-footnote">based on ${words.length} human responses to "what is romance?"<br>confidence: indeterminate</p>
+  `;
+
+  historyItems.unshift({ input, word, classification });
+  if (historyItems.length > 6) historyItems.pop();
+  renderHistory();
+  document.getElementById('user-input').value = '';
+}
+
+function renderHistory() {
+  const hist = document.getElementById('history');
+  const list = document.getElementById('history-list');
+  if (historyItems.length === 0) { hist.style.display = 'none'; return; }
+  hist.style.display = 'block';
+  list.innerHTML = '';
+  historyItems.forEach(item => {
+    const pill = document.createElement('span');
+    pill.className = 'history-pill';
+    pill.textContent = item.input.length > 24 ? item.input.slice(0, 24) + '…' : item.input;
+    pill.title = `diagnosed as: ${item.word} (${item.classification})`;
+    pill.onclick = () => {
+      document.getElementById('user-input').value = item.input;
+      analyze();
+    };
+    list.appendChild(pill);
+  });
+}
+</script>
+</body>
+</html>
