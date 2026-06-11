@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/projects/gender-classifier/static/css/main.e6c13ad2.css",
-    "main.js": "/projects/gender-classifier/static/js/main.59e16516.js",
-    "static/js/453.2b13814f.chunk.js": "/projects/gender-classifier/static/js/453.2b13814f.chunk.js",
-    "index.html": "/projects/gender-classifier/index.html",
-    "main.e6c13ad2.css.map": "/projects/gender-classifier/static/css/main.e6c13ad2.css.map",
-    "main.59e16516.js.map": "/projects/gender-classifier/static/js/main.59e16516.js.map",
-    "453.2b13814f.chunk.js.map": "/projects/gender-classifier/static/js/453.2b13814f.chunk.js.map"
+    "main.css": "/projects/gender_classifier/static/css/main.e6c13ad2.css",
+    "main.js": "/projects/gender_classifier/static/js/main.ec8644ab.js",
+    "static/js/453.2b13814f.chunk.js": "/projects/gender_classifier/static/js/453.2b13814f.chunk.js",
+    "index.html": "/projects/gender_classifier/index.html",
+    "main.e6c13ad2.css.map": "/projects/gender_classifier/static/css/main.e6c13ad2.css.map",
+    "main.ec8644ab.js.map": "/projects/gender_classifier/static/js/main.ec8644ab.js.map",
+    "453.2b13814f.chunk.js.map": "/projects/gender_classifier/static/js/453.2b13814f.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e6c13ad2.css",
-    "static/js/main.59e16516.js"
+    "static/js/main.ec8644ab.js"
   ]
 }
