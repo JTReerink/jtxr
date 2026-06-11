@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>JTXR - Jaap Reerink</title>
+	<style>
+		:root{--bg:#f6f8fa;--card:#ffffff;--muted:#6b7280;--accent:#0366d6}
+		*{box-sizing:border-box}
+		body{font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:#0f172a;margin:0;padding:3rem 1rem;display:flex;justify-content:center}
+		.site{width:100%;max-width:920px}
+		.container{background:var(--card);padding:2rem;border-radius:12px;box-shadow:0 6px 24px rgba(16,24,40,0.08)}
+		h1{margin:0 0 .25rem;font-size:2rem}
+		.lead{color:var(--muted);margin-top:0}
+		.hidden{display:none}
+		.controls{margin:1.25rem 0;display:flex;align-items:center;gap:1rem}
+		button.link-toggle{background:var(--accent);color:#fff;border:none;padding:.6rem .9rem;border-radius:8px;cursor:pointer;font-weight:600}
+		#generated-pages p{margin:0}
+		#generated-pages .subpage{display:block;padding:1rem;border-radius:10px;background:linear-gradient(180deg,#ffffff,#fbfbfd);border:1px solid rgba(15,23,42,0.04);box-shadow:0 4px 12px rgba(16,24,40,0.04);color:#0f172a;text-decoration:none;margin-top:.75rem}
+		#generated-pages .subpage:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(16,24,40,0.08)}
+		.footer{margin-top:1.25rem;color:var(--muted);font-size:.9rem;text-align:center}
+	</style>
+</head>
+<body>
+	<div class="site">
+		<div class="container">
+			<h1>JTXR - Jaap Reerink</h1>
+			<p class="lead">I'm still working on my portfolio!</p>
+            <p class="lead">Designing is not so my thing, so any help is welcome ;)</p>
+            <p class="lead">In the meantime, you can check out some of my projects below:</p>
+
+			<div class="controls">
+				<button id="reveal-pages" class="link-toggle">Reveal Pages</button>
+				<div style="margin-left:auto;color:var(--muted);font-size:.95rem">Auto-generated links</div>
+			</div>
+
+			<!-- AUTO_LINKS_START -->
+<div id="generated-pages" class="hidden">
+  <p><a class="subpage" href="romance_classifier/index.html">romance_classifier</a></p>
+  <p><a class="subpage" href="test/index.html">test</a></p>
+</div>
+<!-- AUTO_LINKS_END -->
+
+			<div class="footer">JTXR — info@jtxr.nl</div>
+		</div>
+	</div>
+
+	<script>
+		document.getElementById('reveal-pages').addEventListener('click',()=>{
+			const el = document.getElementById('generated-pages');
+			if(!el) return;
+			el.classList.toggle('hidden');
+			document.getElementById('reveal-pages').textContent = el.classList.contains('hidden') ? 'Reveal Pages' : 'Hide Pages';
+		});
+	</script>
+</body>
+</html>
+
