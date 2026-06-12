@@ -1,7 +1,0 @@
-{
-  "name": "jtxr-website",
-  "version": "1.0.0",
-  "scripts": {
-    "generate-links": "node scripts/generate_links.js"
-  }
-}
