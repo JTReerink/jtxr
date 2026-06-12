@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>JTXR Admin</title>
+	<style>
+		:root{--bg:#f6f8fa;--card:#ffffff;--muted:#6b7280;--accent:#0366d6;--danger:#dc2626;--border:#e5e7eb}
+		*{box-sizing:border-box}
+		body{font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:#0f172a;margin:0;padding:2rem 1rem;display:flex;justify-content:center}
+		.site{width:100%;max-width:960px}
+		.container{background:var(--card);padding:1.5rem 2rem;border-radius:12px;box-shadow:0 6px 24px rgba(16,24,40,0.08)}
+		h1{margin:0 0 .25rem;font-size:1.5rem}
+		.muted{color:var(--muted)}
+		.row{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+		button{background:var(--accent);color:#fff;border:none;padding:.55rem .9rem;border-radius:8px;cursor:pointer;font-weight:600}
+		button.secondary{background:#e5e7eb;color:#0f172a}
+		button.danger{background:var(--danger)}
+		button:disabled{opacity:.5;cursor:not-allowed}
+		.tabs{display:flex;gap:.25rem;margin:1.25rem 0 1rem;border-bottom:1px solid var(--border)}
+		.tab{padding:.6rem 1rem;cursor:pointer;border:none;background:transparent;color:var(--muted);font-weight:600;border-bottom:2px solid transparent}
+		.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+		.hidden{display:none}
+		.list{display:flex;flex-direction:column;gap:.75rem;margin:1rem 0}
+		.item{border:1px solid var(--border);border-radius:10px;padding:1rem;display:flex;gap:1rem;align-items:flex-start}
+		.item img{width:96px;height:64px;object-fit:cover;border-radius:6px;background:#f0f0f0}
+		.item .meta{flex:1;min-width:0}
+		.item h3{margin:0 0 .25rem;font-size:1rem}
+		.item p{margin:0;color:var(--muted);font-size:.9rem;overflow:hidden;text-overflow:ellipsis}
+		.item .actions{display:flex;flex-direction:column;gap:.4rem}
+		form{display:flex;flex-direction:column;gap:.75rem;margin-top:1rem}
+		label{font-size:.85rem;font-weight:600;display:flex;flex-direction:column;gap:.25rem}
+		input,textarea{font:inherit;padding:.55rem .7rem;border:1px solid var(--border);border-radius:8px;background:#fff}
+		textarea{min-height:5rem;resize:vertical}
+		.form-actions{display:flex;gap:.5rem;justify-content:flex-end}
+		.notice{padding:.75rem 1rem;border-radius:8px;background:#fef3c7;color:#92400e;margin-top:1rem}
+		.error{padding:.75rem 1rem;border-radius:8px;background:#fee2e2;color:#991b1b;margin-top:1rem}
+		.thumb-preview{max-width:200px;border-radius:6px;margin-top:.25rem}
+	</style>
+</head>
+<body>
+	<div class="site">
+		<div class="container">
+			<div class="row">
+				<div>
+					<h1>JTXR Admin</h1>
+					<p class="muted" id="user-info">Not signed in</p>
+				</div>
+				<div>
+					<button id="signin-btn">Sign in with Google</button>
+					<button id="signout-btn" class="secondary hidden">Sign out</button>
+				</div>
+			</div>
+
+			<div id="auth-error" class="error hidden"></div>
+
+			<div id="app" class="hidden">
+				<div class="tabs">
+					<button class="tab active" data-tab="projects">Projects</button>
+					<button class="tab" data-tab="pages">Pages</button>
+				</div>
+
+				<section id="tab-projects">
+					<div class="row">
+						<h2 style="margin:0;font-size:1.1rem">Projects</h2>
+						<button id="new-project-btn">+ New project</button>
+					</div>
+					<div id="project-list" class="list"></div>
+
+					<div id="project-form-wrap" class="hidden">
+						<h3 id="project-form-title">New project</h3>
+						<form id="project-form">
+							<label>Title
+								<input name="title" required>
+							</label>
+							<label>Description
+								<textarea name="description"></textarea>
+							</label>
+							<label>Link (relative path or full URL)
+								<input name="link" placeholder="./projects/relation_stamp" list="project-links" autocomplete="off" required>
+								<datalist id="project-links"></datalist>
+							</label>
+							<label>Screenshot URL (optional)
+								<input name="screenshotUrl" placeholder="./projects/relation_stamp/screenshot.png" list="project-screenshots" autocomplete="off">
+								<datalist id="project-screenshots"></datalist>
+								<img id="screenshot-preview" class="thumb-preview hidden">
+							</label>
+							<label>Sort order (lower = first)
+								<input name="order" type="number" value="0">
+							</label>
+							<div class="form-actions">
+								<button type="button" class="secondary" id="project-cancel">Cancel</button>
+								<button type="submit" id="project-save">Save</button>
+							</div>
+						</form>
+					</div>
+				</section>
+
+				<section id="tab-pages" class="hidden">
+					<h2 style="margin:0 0 .5rem;font-size:1.1rem">Homepage</h2>
+					<p class="muted" style="margin:0 0 1rem">Edit the title and intro text shown on jtxr.nl.</p>
+					<form id="page-home-form">
+						<label>Title
+							<input name="title" placeholder="JTXR - Jaap Reerink">
+						</label>
+						<label>Intro (one paragraph per line)
+							<textarea name="lead" rows="5"></textarea>
+						</label>
+						<div class="form-actions">
+							<button type="submit">Save</button>
+						</div>
+					</form>
+					<p id="page-home-status" class="muted"></p>
+				</section>
+			</div>
+		</div>
+	</div>
+
+	<script type="module" src="./app.js"></script>
+</body>
+</html>

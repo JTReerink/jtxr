@@ -13,33 +13,93 @@
 		h1{margin:0 0 .25rem;font-size:2rem}
 		.lead{color:var(--muted);margin-top:0}
 		.hidden{display:none}
-		.controls{margin:1.25rem 0;display:flex;align-items:center;gap:1rem}
-		button.link-toggle{background:var(--accent);color:#fff;border:none;padding:.6rem .9rem;border-radius:8px;cursor:pointer;font-weight:600}
-		#generated-pages p{margin:0}
-		#generated-pages .subpage{display:block;padding:1rem;border-radius:10px;background:linear-gradient(180deg,#ffffff,#fbfbfd);border:1px solid rgba(15,23,42,0.04);box-shadow:0 4px 12px rgba(16,24,40,0.04);color:#0f172a;text-decoration:none;margin-top:.75rem}
+		#generated-pages ul{list-style:none;padding:0;margin:0}
+		#generated-pages .subpage{display:flex;gap:1rem;align-items:center;padding:1rem;border-radius:10px;background:linear-gradient(180deg,#ffffff,#fbfbfd);border:1px solid rgba(15,23,42,0.04);box-shadow:0 4px 12px rgba(16,24,40,0.04);color:#0f172a;text-decoration:none;margin-top:.75rem}
 		#generated-pages .subpage:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(16,24,40,0.08)}
+		#generated-pages .subpage img{width:80px;height:56px;object-fit:cover;border-radius:6px;flex-shrink:0;background:#f0f0f0}
+		#generated-pages .subpage .body{min-width:0}
+		#generated-pages .subpage h3{margin:0 0 .25rem;font-size:1rem}
+		#generated-pages .subpage p{color:var(--muted);font-size:.9rem;margin:0}
 		.footer{margin-top:1.25rem;color:var(--muted);font-size:.9rem;text-align:center}
 	</style>
 </head>
 <body>
 	<div class="site">
 		<div class="container">
-			<h1>JTXR - Jaap Reerink</h1>
-			<p class="lead">I'm still working on my portfolio!</p>
-            <p class="lead">Designing is not so my thing, so any help is welcome ;)</p>
-            <p class="lead">In the meantime, you can check out some of my projects below:</p>
+			<h1 id="page-title">JTXR - Jaap Reerink</h1>
+			<div id="page-lead">
+				<p class="lead">I'm still working on my portfolio!</p>
+				<p class="lead">Designing is not so my thing, so any help is welcome ;)</p>
+				<p class="lead">In the meantime, you can check out some of my projects below:</p>
+			</div>
 
 			<div id="generated-pages">
-				<ul style="list-style:none;padding:0;margin:0">
-					<li><a href="./projects/gender_classifier" class="subpage">Gender Classifier</a></li>
-					<li><a href="./projects/relation_stamp" class="subpage">Relation Stamp</a></li>
-					<li><a href="./projects/romance_classifier" class="subpage">Romance Classifier</a></li>
+				<ul id="project-list">
+					<li><a href="./projects/gender_classifier" class="subpage"><div class="body"><h3>Gender Classifier</h3></div></a></li>
+					<li><a href="./projects/relation_stamp" class="subpage"><div class="body"><h3>Relation Stamp</h3></div></a></li>
+					<li><a href="./projects/romance_classifier" class="subpage"><div class="body"><h3>Romance Classifier</h3></div></a></li>
 				</ul>
 			</div>
 
 			<div class="footer">JTXR — info@jtxr.nl</div>
 		</div>
 	</div>
+
+	<script type="module">
+		import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+		import { getFirestore, collection, doc, getDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+		import { firebaseConfig } from "./firebase-config.js";
+
+		const app = initializeApp(firebaseConfig);
+		const db = getFirestore(app);
+
+		(async () => {
+			try {
+				const homeSnap = await getDoc(doc(db, "pages", "home"));
+				if (homeSnap.exists()) {
+					const data = homeSnap.data();
+					if (data.title) document.getElementById("page-title").textContent = data.title;
+					if (Array.isArray(data.lead) && data.lead.length) {
+						document.getElementById("page-lead").innerHTML =
+							data.lead.map((t) => `<p class="lead"></p>`).join("");
+						document.querySelectorAll("#page-lead p").forEach((p, i) => p.textContent = data.lead[i]);
+					}
+				}
+			} catch (e) { console.warn("home page load failed", e); }
+
+			try {
+				const snap = await getDocs(query(collection(db, "projects"), orderBy("order", "asc")));
+				if (snap.empty) return;
+				const ul = document.getElementById("project-list");
+				ul.innerHTML = "";
+				snap.forEach((d) => {
+					const p = d.data();
+					const li = document.createElement("li");
+					const a = document.createElement("a");
+					a.className = "subpage";
+					a.href = p.link || "#";
+					if (p.screenshotUrl) {
+						const img = document.createElement("img");
+						img.src = p.screenshotUrl;
+						img.alt = "";
+						a.appendChild(img);
+					}
+					const body = document.createElement("div");
+					body.className = "body";
+					const h = document.createElement("h3");
+					h.textContent = p.title || "";
+					body.appendChild(h);
+					if (p.description) {
+						const desc = document.createElement("p");
+						desc.textContent = p.description;
+						body.appendChild(desc);
+					}
+					a.appendChild(body);
+					li.appendChild(a);
+					ul.appendChild(li);
+				});
+			} catch (e) { console.warn("project list load failed", e); }
+		})();
+	</script>
 </body>
 </html>
-
