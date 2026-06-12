@@ -36,6 +36,14 @@
 		.notice{padding:.75rem 1rem;border-radius:8px;background:#fef3c7;color:#92400e;margin-top:1rem}
 		.error{padding:.75rem 1rem;border-radius:8px;background:#fee2e2;color:#991b1b;margin-top:1rem}
 		.thumb-preview{max-width:200px;border-radius:6px;margin-top:.25rem}
+		.modal{position:fixed;inset:0;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;padding:1rem;z-index:10}
+		.modal-card{background:#fff;border-radius:12px;padding:1.5rem;max-width:420px;width:100%;box-shadow:0 12px 32px rgba(16,24,40,.18)}
+		.modal-card h3{margin:0 0 .5rem;font-size:1.1rem}
+		.modal-card p{margin:0 0 1rem;color:var(--muted)}
+		.modal-actions{display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap}
+		.draft-banner{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;padding:.75rem 1rem;border-radius:8px;background:#dbeafe;color:#1e40af;margin-top:1rem}
+		.draft-banner .spacer{flex:1}
+		.draft-banner button{padding:.4rem .7rem;font-size:.85rem}
 	</style>
 </head>
 <body>
@@ -69,6 +77,12 @@
 
 					<div id="project-form-wrap" class="hidden">
 						<h3 id="project-form-title">New project</h3>
+						<div id="draft-banner" class="draft-banner hidden">
+							<span>Draft uit <span id="draft-time"></span> beschikbaar.</span>
+							<span class="spacer"></span>
+							<button type="button" id="draft-load">Laden</button>
+							<button type="button" class="secondary" id="draft-discard">Verwijderen</button>
+						</div>
 						<form id="project-form">
 							<label>Title
 								<input name="title" required>
@@ -109,6 +123,18 @@
 					</form>
 					<p id="page-home-status" class="muted"></p>
 				</section>
+			</div>
+		</div>
+	</div>
+
+	<div id="dirty-modal" class="modal hidden">
+		<div class="modal-card">
+			<h3>Onopgeslagen wijzigingen</h3>
+			<p>Je hebt wijzigingen in het formulier die nog niet zijn opgeslagen.</p>
+			<div class="modal-actions">
+				<button type="button" class="secondary" data-modal-action="cancel">Annuleren</button>
+				<button type="button" data-modal-action="draft">Opslaan als draft</button>
+				<button type="button" class="danger" data-modal-action="discard">Weggooien</button>
 			</div>
 		</div>
 	</div>

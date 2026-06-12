@@ -30,10 +30,80 @@ const els = {
 	screenshotPreview: $("screenshot-preview"),
 	pageHomeForm: $("page-home-form"),
 	pageHomeStatus: $("page-home-status"),
+	draftBanner: $("draft-banner"),
+	draftTime: $("draft-time"),
+	draftLoad: $("draft-load"),
+	draftDiscard: $("draft-discard"),
+	dirtyModal: $("dirty-modal"),
 };
 
 let editingProjectId = null;
 let projectsCache = [];
+let formInitialValues = null;
+
+// ---- Drafts (localStorage) ----
+const DRAFT_KEY = "jtxr_project_drafts";
+const NEW_DRAFT_ID = "__new__";
+const loadDrafts = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}"); } catch { return {}; } };
+const saveDrafts = (d) => localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+const getDraft = (id) => loadDrafts()[id || NEW_DRAFT_ID];
+function setDraft(id, values) {
+	const drafts = loadDrafts();
+	drafts[id || NEW_DRAFT_ID] = { ...values, savedAt: Date.now() };
+	saveDrafts(drafts);
+}
+function clearDraft(id) {
+	const drafts = loadDrafts();
+	delete drafts[id || NEW_DRAFT_ID];
+	saveDrafts(drafts);
+}
+
+// ---- Form state helpers ----
+function getFormValues() {
+	return {
+		title: els.projectForm.title.value,
+		description: els.projectForm.description.value,
+		link: els.projectForm.link.value,
+		screenshotUrl: els.projectForm.screenshotUrl.value,
+	};
+}
+function setFormValues(v) {
+	els.projectForm.title.value = v.title || "";
+	els.projectForm.description.value = v.description || "";
+	els.projectForm.link.value = v.link || "";
+	els.projectForm.screenshotUrl.value = v.screenshotUrl || "";
+	updateScreenshotPreview(v.screenshotUrl || "");
+}
+function snapshotFormState() { formInitialValues = getFormValues(); }
+function isFormDirty() {
+	if (!formInitialValues) return false;
+	if (els.projectFormWrap.classList.contains("hidden")) return false;
+	const cur = getFormValues();
+	return Object.keys(cur).some((k) => cur[k] !== formInitialValues[k]);
+}
+
+// ---- Modal ----
+function confirmDirty() {
+	return new Promise((resolve) => {
+		els.dirtyModal.classList.remove("hidden");
+		const handler = (e) => {
+			const action = e.target.dataset.modalAction;
+			if (!action) return;
+			els.dirtyModal.classList.add("hidden");
+			els.dirtyModal.removeEventListener("click", handler);
+			resolve(action);
+		};
+		els.dirtyModal.addEventListener("click", handler);
+	});
+}
+
+async function tryOpenProjectForm(id, data) {
+	if (!isFormDirty()) { openProjectForm(id, data); return; }
+	const action = await confirmDirty();
+	if (action === "cancel") return;
+	if (action === "draft") setDraft(editingProjectId, getFormValues());
+	openProjectForm(id, data);
+}
 
 // ---- Auth ----
 els.signinBtn.addEventListener("click", async () => {
@@ -155,7 +225,7 @@ function renderProjectItem(id, data, index) {
 	item.querySelector("h3").textContent = data.title || "(untitled)";
 	item.querySelector("p").textContent = data.description || "";
 	item.querySelector(".muted").textContent = data.link || "";
-	item.querySelector('[data-action="edit"]').addEventListener("click", () => openProjectForm(id, data));
+	item.querySelector('[data-action="edit"]').addEventListener("click", () => tryOpenProjectForm(id, data));
 	item.querySelector('[data-action="delete"]').addEventListener("click", () => deleteProject(id, data));
 	item.querySelector('[data-action="up"]').addEventListener("click", () => moveProject(index, -1));
 	item.querySelector('[data-action="down"]').addEventListener("click", () => moveProject(index, 1));
@@ -182,25 +252,48 @@ async function moveProject(index, delta) {
 	}
 }
 
-els.newProjectBtn.addEventListener("click", () => openProjectForm(null, null));
+els.newProjectBtn.addEventListener("click", () => tryOpenProjectForm(null, null));
 els.projectCancel.addEventListener("click", closeProjectForm);
 
 function openProjectForm(id, data) {
 	editingProjectId = id;
 	els.projectFormTitle.textContent = id ? "Edit project" : "New project";
 	els.projectForm.reset();
-	els.projectForm.title.value = data?.title || "";
-	els.projectForm.description.value = data?.description || "";
-	els.projectForm.link.value = data?.link || "";
-	els.projectForm.screenshotUrl.value = data?.screenshotUrl || "";
-	updateScreenshotPreview(data?.screenshotUrl);
+	setFormValues({
+		title: data?.title,
+		description: data?.description,
+		link: data?.link,
+		screenshotUrl: data?.screenshotUrl,
+	});
+	snapshotFormState();
+	updateDraftBanner(id, data);
 	els.projectFormWrap.classList.remove("hidden");
+	els.projectFormWrap.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function closeProjectForm() {
 	editingProjectId = null;
+	formInitialValues = null;
 	els.projectFormWrap.classList.add("hidden");
+	els.draftBanner.classList.add("hidden");
 	els.screenshotPreview.classList.add("hidden");
+}
+
+function updateDraftBanner(id, data) {
+	const draft = getDraft(id);
+	if (!draft) { els.draftBanner.classList.add("hidden"); return; }
+	const d = new Date(draft.savedAt);
+	els.draftTime.textContent = d.toLocaleString();
+	els.draftBanner.classList.remove("hidden");
+	els.draftLoad.onclick = () => {
+		setFormValues(draft);
+		snapshotFormState();
+		els.draftBanner.classList.add("hidden");
+	};
+	els.draftDiscard.onclick = () => {
+		clearDraft(id);
+		els.draftBanner.classList.add("hidden");
+	};
 }
 
 function updateScreenshotPreview(url) {
@@ -229,6 +322,7 @@ els.projectForm.addEventListener("submit", async (e) => {
 			updatedAt: serverTimestamp(),
 		};
 
+		const savedId = editingProjectId;
 		if (editingProjectId) {
 			await updateDoc(doc(db, "projects", editingProjectId), payload);
 		} else {
@@ -236,6 +330,7 @@ els.projectForm.addEventListener("submit", async (e) => {
 			payload.createdAt = serverTimestamp();
 			await addDoc(collection(db, "projects"), payload);
 		}
+		clearDraft(savedId);
 		closeProjectForm();
 		await loadProjects();
 	} catch (e) {
