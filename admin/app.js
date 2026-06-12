@@ -4,7 +4,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import {
 	getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
-	deleteDoc, query, orderBy, serverTimestamp
+	deleteDoc, query, orderBy, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 import { firebaseConfig, ADMIN_EMAILS } from "../firebase-config.js";
@@ -33,6 +33,7 @@ const els = {
 };
 
 let editingProjectId = null;
+let projectsCache = [];
 
 // ---- Auth ----
 els.signinBtn.addEventListener("click", async () => {
@@ -115,21 +116,31 @@ async function loadProjects() {
 	els.projectList.innerHTML = "<p class='muted'>Loading…</p>";
 	try {
 		const snap = await getDocs(query(collection(db, "projects"), orderBy("order", "asc")));
-		if (snap.empty) {
-			els.projectList.innerHTML = "<p class='muted'>No projects yet.</p>";
-			return;
-		}
-		els.projectList.innerHTML = "";
-		snap.forEach((d) => els.projectList.appendChild(renderProjectItem(d.id, d.data())));
+		projectsCache = snap.docs.map((d) => ({ id: d.id, data: d.data() }));
+		renderProjectList();
 	} catch (e) {
 		els.projectList.innerHTML = `<p class='error'>Failed to load: ${e.message}</p>`;
 	}
 }
 
-function renderProjectItem(id, data) {
+function renderProjectList() {
+	if (projectsCache.length === 0) {
+		els.projectList.innerHTML = "<p class='muted'>No projects yet.</p>";
+		return;
+	}
+	els.projectList.innerHTML = "";
+	projectsCache.forEach((p, i) => els.projectList.appendChild(renderProjectItem(p.id, p.data, i)));
+}
+
+function renderProjectItem(id, data, index) {
+	const last = projectsCache.length - 1;
 	const item = document.createElement("div");
 	item.className = "item";
 	item.innerHTML = `
+		<div class="reorder" style="display:flex;flex-direction:column;gap:.25rem">
+			<button class="secondary" data-action="up" title="Move up" ${index === 0 ? "disabled" : ""}>↑</button>
+			<button class="secondary" data-action="down" title="Move down" ${index === last ? "disabled" : ""}>↓</button>
+		</div>
 		${data.screenshotUrl ? `<img src="${data.screenshotUrl}" alt="">` : ""}
 		<div class="meta">
 			<h3></h3>
@@ -146,7 +157,29 @@ function renderProjectItem(id, data) {
 	item.querySelector(".muted").textContent = data.link || "";
 	item.querySelector('[data-action="edit"]').addEventListener("click", () => openProjectForm(id, data));
 	item.querySelector('[data-action="delete"]').addEventListener("click", () => deleteProject(id, data));
+	item.querySelector('[data-action="up"]').addEventListener("click", () => moveProject(index, -1));
+	item.querySelector('[data-action="down"]').addEventListener("click", () => moveProject(index, 1));
 	return item;
+}
+
+async function moveProject(index, delta) {
+	const target = index + delta;
+	if (target < 0 || target >= projectsCache.length) return;
+	[projectsCache[index], projectsCache[target]] = [projectsCache[target], projectsCache[index]];
+	renderProjectList();
+	try {
+		const batch = writeBatch(db);
+		projectsCache.forEach((p, i) => {
+			if (p.data.order !== i) {
+				batch.update(doc(db, "projects", p.id), { order: i });
+				p.data.order = i;
+			}
+		});
+		await batch.commit();
+	} catch (e) {
+		alert("Reorder failed: " + e.message);
+		await loadProjects();
+	}
 }
 
 els.newProjectBtn.addEventListener("click", () => openProjectForm(null, null));
@@ -160,7 +193,6 @@ function openProjectForm(id, data) {
 	els.projectForm.description.value = data?.description || "";
 	els.projectForm.link.value = data?.link || "";
 	els.projectForm.screenshotUrl.value = data?.screenshotUrl || "";
-	els.projectForm.order.value = data?.order ?? 0;
 	updateScreenshotPreview(data?.screenshotUrl);
 	els.projectFormWrap.classList.remove("hidden");
 }
@@ -194,13 +226,13 @@ els.projectForm.addEventListener("submit", async (e) => {
 			description: fd.get("description").trim(),
 			link: fd.get("link").trim(),
 			screenshotUrl: fd.get("screenshotUrl").trim(),
-			order: Number(fd.get("order")) || 0,
 			updatedAt: serverTimestamp(),
 		};
 
 		if (editingProjectId) {
 			await updateDoc(doc(db, "projects", editingProjectId), payload);
 		} else {
+			payload.order = projectsCache.length;
 			payload.createdAt = serverTimestamp();
 			await addDoc(collection(db, "projects"), payload);
 		}
