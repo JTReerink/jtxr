@@ -29,27 +29,17 @@
             <p class="lead">Designing is not so my thing, so any help is welcome ;)</p>
             <p class="lead">In the meantime, you can check out some of my projects below:</p>
 
-			<div class="controls">
-				<button id="reveal-pages" class="link-toggle">Reveal Pages</button>
-				<div style="margin-left:auto;color:var(--muted);font-size:.95rem">Auto-generated links</div>
+			<div id="generated-pages">
+				<ul style="list-style:none;padding:0;margin:0">
+					<li><a href="./projects/gender_classifier" class="subpage">Gender Classifier</a></li>
+					<li><a href="./projects/relation_stamp" class="subpage">Relation Stamp</a></li>
+					<li><a href="./projects/romance_classifier" class="subpage">Romance Classifier</a></li>
+				</ul>
 			</div>
-
-			<!-- AUTO_LINKS_START -->
-<div id="generated-pages" class="hidden"><p>No subpages found.</p></div>
-<!-- AUTO_LINKS_END -->
 
 			<div class="footer">JTXR — info@jtxr.nl</div>
 		</div>
 	</div>
-
-	<script>
-		document.getElementById('reveal-pages').addEventListener('click',()=>{
-			const el = document.getElementById('generated-pages');
-			if(!el) return;
-			el.classList.toggle('hidden');
-			document.getElementById('reveal-pages').textContent = el.classList.contains('hidden') ? 'Reveal Pages' : 'Hide Pages';
-		});
-	</script>
 </body>
 </html>
 
